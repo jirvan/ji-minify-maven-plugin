@@ -126,49 +126,45 @@ public class JiMinifierMojo extends AbstractMojo {
             }
         }
 
-        if (outFile.exists()) {
-            throw new RuntimeException(String.format("%s already exists", outFile.getAbsolutePath()));
-        } else {
+        try {
+            if (!outFile.getParentFile().exists()) {
+                outFile.getParentFile().mkdirs();
+            }
+            assertIsDirectory(outFile.getParentFile());
+            FileWriter fileWriter = new FileWriter(outFile);
             try {
-                if (!outFile.getParentFile().exists()) {
-                    outFile.getParentFile().mkdirs();
-                }
-                assertIsDirectory(outFile.getParentFile());
-                FileWriter fileWriter = new FileWriter(outFile);
-                try {
-                    for (int i = 0; i < orderedPaths.size(); i++) {
-                        if (i > 0) fileWriter.write("\n\n");
-                        fileWriter.write(isJsFile ? "//========== " : "/*========== ");
-                        fileWriter.write(orderedPaths.get(i).replaceAll("\\\\", "/"));
-                        fileWriter.write(isJsFile ? " ==========//\n" : " ==========*/\n");
-                        File file = new File(webappSourceDir, orderedPaths.get(i));
-                        if (!file.exists()) {
-                            file = new File(unpackedDependencyJsAndCssDir, orderedPaths.get(i));
-                        }
-                        if (!file.exists()) {
-                            throw new RuntimeException(String.format("Neither %s or %s exist", new File(webappSourceDir, orderedPaths.get(i)).getAbsolutePath(), file.getAbsolutePath()));
-                        }
-                        InputStream inputStream = new FileInputStream(file);
+                for (int i = 0; i < orderedPaths.size(); i++) {
+                    if (i > 0) fileWriter.write("\n\n");
+                    fileWriter.write(isJsFile ? "//========== " : "/*========== ");
+                    fileWriter.write(orderedPaths.get(i).replaceAll("\\\\", "/"));
+                    fileWriter.write(isJsFile ? " ==========//\n" : " ==========*/\n");
+                    File file = new File(webappSourceDir, orderedPaths.get(i));
+                    if (!file.exists()) {
+                        file = new File(unpackedDependencyJsAndCssDir, orderedPaths.get(i));
+                    }
+                    if (!file.exists()) {
+                        throw new RuntimeException(String.format("Neither %s or %s exist", new File(webappSourceDir, orderedPaths.get(i)).getAbsolutePath(), file.getAbsolutePath()));
+                    }
+                    InputStream inputStream = new FileInputStream(file);
+                    try {
+                        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                         try {
-                            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-                            try {
-                                int character;
-                                while ((character = bufferedReader.read()) != -1) {
-                                    fileWriter.write(character);
-                                }
-                            } finally {
-                                bufferedReader.close();
+                            int character;
+                            while ((character = bufferedReader.read()) != -1) {
+                                fileWriter.write(character);
                             }
                         } finally {
-                            inputStream.close();
+                            bufferedReader.close();
                         }
+                    } finally {
+                        inputStream.close();
                     }
-                } finally {
-                    fileWriter.close();
                 }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            } finally {
+                fileWriter.close();
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
     }
