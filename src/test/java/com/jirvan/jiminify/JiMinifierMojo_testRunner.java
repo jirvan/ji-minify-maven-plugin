@@ -42,6 +42,7 @@ public class JiMinifierMojo_testRunner {
             setPrivateFieldValue(jiMinifierMojo, field, value);
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("minifyConfigFiles"), new String[] {"views/paymentoptions/paymentOptions.minconf.json"});
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappSourceDir"), "L:\\dev\\cm\\cm-server\\src\\main\\webapp");
+            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("unpackedDependencyJsAndCssDir"), "L:\\dev\\cm\\cm-server\\target/unpacked-dependency-jsandcss");
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappTargetDir"), "L:\\dev\\cm\\cm-server\\target/cm-server-1.0.0-SNAPSHOT");
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("projectVersion"), "42.0-SNAPSHOT");
             jiMinifierMojo.execute();

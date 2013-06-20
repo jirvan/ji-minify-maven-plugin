@@ -50,8 +50,14 @@ public class JiMinifierMojo extends AbstractMojo {
     @Parameter(property = "minify.minifyConfigFiles")
     private String[] minifyConfigFiles;
 
+    @Parameter(property = "minify.overlaysDir", defaultValue = "${basedir}/src/main/webapp")
+    private String overlaysDir;
+
     @Parameter(property = "minify.webappSourceDir", defaultValue = "${basedir}/src/main/webapp")
     private String webappSourceDir;
+
+    @Parameter(property = "minify.unpackedDependencyJsAndCssDir", defaultValue = "${project.build.directory}/unpacked-dependency-jsandcss")
+    private String unpackedDependencyJsAndCssDir;
 
     @Parameter(property = "minify.webappTargetDir", defaultValue = "${project.build.directory}/${project.build.finalName}")
     private String webappTargetDir;
@@ -80,13 +86,13 @@ public class JiMinifierMojo extends AbstractMojo {
 
         if ("SimpleConcatenation".equals(minifierToUse)) {
             if (minifyConfig.jsPaths != null && minifyConfig.jsPaths.length > 0) {
-                createMinifiedFile(webappSourceDir, minifyConfig.jsPaths, outJsFile, true);
+                createMinifiedFile(minifyConfig.jsPaths, outJsFile, true);
             }
             if (minifyConfig.cssPaths != null && minifyConfig.jsPaths.length > 0) {
-                createMinifiedFile(webappSourceDir, minifyConfig.cssPaths, outCssFile, false);
+                createMinifiedFile(minifyConfig.cssPaths, outCssFile, false);
             }
             if (minifyConfig.ieOnlyCssPaths != null && minifyConfig.jsPaths.length > 0) {
-                createMinifiedFile(webappSourceDir, minifyConfig.ieOnlyCssPaths, outIeOnlyCssFile, false);
+                createMinifiedFile(minifyConfig.ieOnlyCssPaths, outIeOnlyCssFile, false);
             }
         } else {
             throw new RuntimeException(String.format("Don't recognize minifierToUse \"%s\" (SimpleConcatenation is the only minifier currently supported", minifierToUse));
@@ -94,21 +100,31 @@ public class JiMinifierMojo extends AbstractMojo {
 
     }
 
-    private void createMinifiedFile(String webappSourceDir, String[] paths, File outFile, boolean isJsFile) {
+    private void createMinifiedFile(String[] paths, File outFile, boolean isJsFile) {
 
         // Scan to get final pathlist
-        DirectoryScanner ds = new DirectoryScanner();
-        String[] includes = paths;
-        ds.setIncludes(includes);
-        ds.setBasedir(new File(webappSourceDir));
-        ds.setCaseSensitive(true);
-        ds.scan();
-        String[] foundPaths = ds.getIncludedFiles();
-        Arrays.sort(foundPaths, new Comparator<String>() {
-            @Override public int compare(String o1, String o2) {
-                return o1.replaceFirst(".*[\\\\/]", "").compareTo(o2.replaceFirst(".*[\\\\/]", ""));
+        List<String> orderedPaths = new ArrayList<String>();
+        for (String path : paths) {
+            DirectoryScanner ds = new DirectoryScanner();
+            ds.setIncludes(new String[]{path});
+            ds.setBasedir(new File(webappSourceDir));
+            ds.setCaseSensitive(true);
+            ds.scan();
+            String[] foundPaths = ds.getIncludedFiles();
+            if (foundPaths.length == 0) {
+                ds.setBasedir(new File(unpackedDependencyJsAndCssDir));
+                ds.scan();
+                foundPaths = ds.getIncludedFiles();
             }
-        });
+            Arrays.sort(foundPaths, new Comparator<String>() {
+                @Override public int compare(String o1, String o2) {
+                    return o1.replaceFirst(".*[\\\\/]", "").compareTo(o2.replaceFirst(".*[\\\\/]", ""));
+                }
+            });
+            for (String foundPath : foundPaths) {
+                orderedPaths.add(foundPath);
+            }
+        }
 
         if (outFile.exists()) {
             throw new RuntimeException(String.format("%s already exists", outFile.getAbsolutePath()));
@@ -120,12 +136,19 @@ public class JiMinifierMojo extends AbstractMojo {
                 assertIsDirectory(outFile.getParentFile());
                 FileWriter fileWriter = new FileWriter(outFile);
                 try {
-                    for (int i = 0; i < foundPaths.length; i++) {
+                    for (int i = 0; i < orderedPaths.size(); i++) {
                         if (i > 0) fileWriter.write("\n\n");
                         fileWriter.write(isJsFile ? "//========== " : "/*========== ");
-                        fileWriter.write(foundPaths[i].replaceAll("\\\\", "/"));
+                        fileWriter.write(orderedPaths.get(i).replaceAll("\\\\", "/"));
                         fileWriter.write(isJsFile ? " ==========//\n" : " ==========*/\n");
-                        InputStream inputStream = new FileInputStream(new File(webappSourceDir, foundPaths[i]));
+                        File file = new File(webappSourceDir, orderedPaths.get(i));
+                        if (!file.exists()) {
+                            file = new File(unpackedDependencyJsAndCssDir, orderedPaths.get(i));
+                        }
+                        if (!file.exists()) {
+                            throw new RuntimeException(String.format("Neither %s or %s exist", new File(webappSourceDir, orderedPaths.get(i)).getAbsolutePath(), file.getAbsolutePath()));
+                        }
+                        InputStream inputStream = new FileInputStream(file);
                         try {
                             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                             try {
