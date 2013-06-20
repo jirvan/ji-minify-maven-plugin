@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-package com.jirvan.jiminifier;
+package com.jirvan.jiminify;
 
 import com.jirvan.util.*;
 import org.apache.maven.plugin.*;
@@ -47,11 +47,8 @@ public class JiMinifierMojo extends AbstractMojo {
     @Parameter(property = "minify.minifierToUse", defaultValue = "SimpleConcatenation")
     private String minifierToUse;
 
-    @Parameter(property = "minify.minifyConfigFile")
-    private String minifyConfigFile;
-
-    @Parameter(property = "minify.basedir", defaultValue = "${basedir}")
-    private String basedir;
+    @Parameter(property = "minify.minifyConfigFiles")
+    private String[] minifyConfigFiles;
 
     @Parameter(property = "minify.webappSourceDir", defaultValue = "${basedir}/src/main/webapp")
     private String webappSourceDir;
@@ -59,58 +56,45 @@ public class JiMinifierMojo extends AbstractMojo {
     @Parameter(property = "minify.webappTargetDir", defaultValue = "${project.build.directory}/${project.build.finalName}")
     private String webappTargetDir;
 
-//    @Parameter(property = "minify.buildDir", defaultValue = "${project.build.directory}")
-//    private String buildDir;
-
     @Parameter(property = "minify.projectVersion", defaultValue = "${project.version}")
     private String projectVersion;
 
-    public static void main(String[] args) {
-        try {
-            JiMinifierMojo jiMinifierMojo = new JiMinifierMojo();
-            jiMinifierMojo.getClass().getDeclaredField("minifierToUse").set(jiMinifierMojo, "SimpleConcatenation");
-            jiMinifierMojo.getClass().getDeclaredField("minifyConfigFile").set(jiMinifierMojo, "views/paymentoptions/paymentOptions.minconf.json");
-            jiMinifierMojo.getClass().getDeclaredField("basedir").set(jiMinifierMojo, "L:\\dev\\cm\\cm-server");
-            jiMinifierMojo.getClass().getDeclaredField("webappSourceDir").set(jiMinifierMojo, "L:\\dev\\cm\\cm-server\\src\\main\\webapp");
-            jiMinifierMojo.getClass().getDeclaredField("webappTargetDir").set(jiMinifierMojo, "L:\\dev\\cm\\cm-server\\target/cm-server-1.0.0-SNAPSHOT");
-//            jiMinifierMojo.getClass().getDeclaredField("buildDir").set(jiMinifierMojo, "L:\\dev\\cm\\cm-server\\target");
-            jiMinifierMojo.getClass().getDeclaredField("projectVersion").set(jiMinifierMojo, "42.0-SNAPSHOT");
-            jiMinifierMojo.execute();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    public void execute() throws MojoExecutionException {
+        if (minifyConfigFiles == null) throw new RuntimeException("Expected minify.minifyConfigFiles to be set");
+        if (minifyConfigFiles.length == 0) throw new RuntimeException("Expected minify.minifyConfigFiles to contain at least one param");
+        for (String minifyConfigFile : minifyConfigFiles) {
+            executeForConfigFile(minifyConfigFile);
         }
     }
 
-    public void execute() throws MojoExecutionException {
+    private void executeForConfigFile(String minifyConfigFile) {
+        getLog().info(String.format("Processing %s", minifyConfigFile));
 
-        System.out.printf("\n\nwebappTargetDir \"%s\"\n\n", webappTargetDir);
-
-        if (minifyConfigFile == null) throw new RuntimeException("Expected minify.minifyConfigFile to be set");
         File configFile = new File(webappSourceDir, minifyConfigFile);
         String basePath = minifyConfigFile.replaceFirst("\\.[^\\.]+$", "").replaceFirst("\\.minconf$", "");
         File outCssFile = new File(webappTargetDir, String.format("/%s_%s.css", basePath, projectVersion));
+        File outIeOnlyCssFile = new File(webappTargetDir, String.format("/%s-ieonly_%s.css", basePath, projectVersion));
         File outJsFile = new File(webappTargetDir, String.format("/%s_%s.js", basePath, projectVersion));
-//        File outCssFile = new File(buildDir, String.format("generated-resources/ji-minify/%s_%s.css", basePath, projectVersion));
-//        File outJsFile = new File(buildDir, String.format("generated-resources/ji-minify/%s_%s.js", basePath, projectVersion));
-
-//        assertIsDirectory(new File(buildDir));
-//        Io.ensureDirectoryExists(new File(buildDir));
 
         MinifyConfig minifyConfig = Json.fromJsonFile(configFile, MinifyConfig.class);
 
         if ("SimpleConcatenation".equals(minifierToUse)) {
-            createMinifiedFile(webappSourceDir, minifyConfig.jsPaths, outJsFile);
+            if (minifyConfig.jsPaths != null && minifyConfig.jsPaths.length > 0) {
+                createMinifiedFile(webappSourceDir, minifyConfig.jsPaths, outJsFile, true);
+            }
+            if (minifyConfig.cssPaths != null && minifyConfig.jsPaths.length > 0) {
+                createMinifiedFile(webappSourceDir, minifyConfig.cssPaths, outCssFile, false);
+            }
+            if (minifyConfig.ieOnlyCssPaths != null && minifyConfig.jsPaths.length > 0) {
+                createMinifiedFile(webappSourceDir, minifyConfig.ieOnlyCssPaths, outIeOnlyCssFile, false);
+            }
         } else {
             throw new RuntimeException(String.format("Don't recognize minifierToUse \"%s\" (SimpleConcatenation is the only minifier currently supported", minifierToUse));
         }
 
-
-        getLog().info(outJsFile.getAbsolutePath());
     }
 
-    private void createMinifiedFile(String webappSourceDir, String[] paths, File outFile) {
-
-//        File webappSourceDirFile = new File(webappSourceDir);
+    private void createMinifiedFile(String webappSourceDir, String[] paths, File outFile, boolean isJsFile) {
 
         // Scan to get final pathlist
         DirectoryScanner ds = new DirectoryScanner();
@@ -126,8 +110,7 @@ public class JiMinifierMojo extends AbstractMojo {
             }
         });
 
-        System.out.printf("\n\n\nzzzzzzzzzzzzzz\n\n\n");
-        if (outFile.exists() && false) {
+        if (outFile.exists()) {
             throw new RuntimeException(String.format("%s already exists", outFile.getAbsolutePath()));
         } else {
             try {
@@ -137,14 +120,12 @@ public class JiMinifierMojo extends AbstractMojo {
                 assertIsDirectory(outFile.getParentFile());
                 FileWriter fileWriter = new FileWriter(outFile);
                 try {
-                    for (String foundPath : foundPaths) {
-                        System.out.printf("\n\n//========== ");
-                        System.out.printf(foundPath.replaceAll("\\\\", "/"));
-                        System.out.printf(" ==========//\n");
-                        fileWriter.write("\n\n//========== ");
-                        fileWriter.write(foundPath.replaceAll("\\\\", "/"));
-                        fileWriter.write(" ==========//\n");
-                        InputStream inputStream = new FileInputStream(new File(webappSourceDir, foundPath));
+                    for (int i = 0; i < foundPaths.length; i++) {
+                        if (i > 0) fileWriter.write("\n\n");
+                        fileWriter.write(isJsFile ? "//========== " : "/*========== ");
+                        fileWriter.write(foundPaths[i].replaceAll("\\\\", "/"));
+                        fileWriter.write(isJsFile ? " ==========//\n" : " ==========*/\n");
+                        InputStream inputStream = new FileInputStream(new File(webappSourceDir, foundPaths[i]));
                         try {
                             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                             try {
