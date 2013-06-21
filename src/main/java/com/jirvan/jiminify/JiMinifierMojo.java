@@ -76,23 +76,17 @@ public class JiMinifierMojo extends AbstractMojo {
     private void executeForConfigFile(String minifyConfigFile) {
         getLog().info(String.format("Processing %s", minifyConfigFile));
 
-        File configFile = new File(webappSourceDir, minifyConfigFile);
-        String basePath = minifyConfigFile.replaceFirst("\\.[^\\.]+$", "").replaceFirst("\\.minconf$", "");
-        File outCssFile = new File(webappTargetDir, String.format("/%s_%s.css", basePath, projectVersion));
-        File outIeOnlyCssFile = new File(webappTargetDir, String.format("/%s-ieonly_%s.css", basePath, projectVersion));
-        File outJsFile = new File(webappTargetDir, String.format("/%s_%s.js", basePath, projectVersion));
-
-        MinifyConfig minifyConfig = Json.fromJsonFile(configFile, MinifyConfig.class);
+        MinifyConfig minifyConfig = MinifyConfig.fromJsonFile(new File(webappSourceDir, minifyConfigFile));
 
         if ("SimpleConcatenation".equals(minifierToUse)) {
-            if (minifyConfig.jsPaths != null && minifyConfig.jsPaths.length > 0) {
-                createMinifiedFile(minifyConfig.jsPaths, outJsFile, true);
+            if (minifyConfig.cssFiles != null) {
+                createMinifiedFile(minifyConfig.cssFiles, false);
             }
-            if (minifyConfig.cssPaths != null && minifyConfig.jsPaths.length > 0) {
-                createMinifiedFile(minifyConfig.cssPaths, outCssFile, false);
+            if (minifyConfig.ieOnlyCssFiles != null) {
+                createMinifiedFile(minifyConfig.ieOnlyCssFiles, false);
             }
-            if (minifyConfig.ieOnlyCssPaths != null && minifyConfig.jsPaths.length > 0) {
-                createMinifiedFile(minifyConfig.ieOnlyCssPaths, outIeOnlyCssFile, false);
+            if (minifyConfig.jsFiles != null) {
+                createMinifiedFile(minifyConfig.jsFiles, true);
             }
         } else {
             throw new RuntimeException(String.format("Don't recognize minifierToUse \"%s\" (SimpleConcatenation is the only minifier currently supported", minifierToUse));
@@ -100,11 +94,11 @@ public class JiMinifierMojo extends AbstractMojo {
 
     }
 
-    private void createMinifiedFile(String[] paths, File outFile, boolean isJsFile) {
+    private void createMinifiedFile(MinifyConfig.FileSet fileSet, boolean isJsFile) {
 
         // Scan to get final pathlist
         List<String> orderedPaths = new ArrayList<String>();
-        for (String path : paths) {
+        for (String path : fileSet.sourceFiles) {
             DirectoryScanner ds = new DirectoryScanner();
             ds.setIncludes(new String[]{path});
             ds.setBasedir(new File(webappSourceDir));
@@ -127,6 +121,7 @@ public class JiMinifierMojo extends AbstractMojo {
         }
 
         try {
+            File outFile = new File(webappTargetDir, fileSet.minFile);
             if (!outFile.getParentFile().exists()) {
                 outFile.getParentFile().mkdirs();
             }
@@ -171,9 +166,38 @@ public class JiMinifierMojo extends AbstractMojo {
 
     public static class MinifyConfig {
 
-        public String[] cssPaths;
-        public String[] ieOnlyCssPaths;
-        public String[] jsPaths;
+        public FileSet cssFiles;
+        public FileSet ieOnlyCssFiles;
+        public FileSet jsFiles;
+
+        public static MinifyConfig fromJsonFile(File configFile) {
+            MinifyConfig minifyConfig = Json.fromJsonFile(configFile, MinifyConfig.class);
+            verifyFileSet(configFile, minifyConfig.cssFiles, "cssFiles");
+            verifyFileSet(configFile, minifyConfig.ieOnlyCssFiles, "ieOnlyCssFiles");
+            verifyFileSet(configFile, minifyConfig.jsFiles, "jsFiles");
+            return minifyConfig;
+        }
+
+        private static void verifyFileSet(File configFile, FileSet fileSet, String setName) {
+            if (fileSet != null) {
+                if (fileSet.minFile == null) {
+                    throw new RuntimeException(String.format("%s is invalid, %s.minFile must be specified (if %s is)", configFile.getAbsolutePath(), setName, setName));
+                }
+                if (fileSet.sourceFiles == null) {
+                    throw new RuntimeException(String.format("%s is invalid, %s.sourceFiles must be specified (if %s is)", configFile.getAbsolutePath(), setName, setName));
+                }
+                if (fileSet.sourceFiles.length == 0) {
+                    throw new RuntimeException(String.format("%s is invalid, %s.sourceFiles must have at least one item", configFile.getAbsolutePath(), setName));
+                }
+            }
+        }
+
+        public static class FileSet {
+
+            public String minFile;
+            public String[] sourceFiles;
+
+        }
 
     }
 
