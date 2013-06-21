@@ -122,7 +122,7 @@ public class JiMinifierMojo extends AbstractMojo {
 
         try {
             File outFile;
-            if (fileSet.minFile.matches("\\$\\{version\\}")) {
+            if (fileSet.minFile.matches(".*\\$\\{version\\}.*")) {
                 outFile = new File(webappTargetDir, fileSet.minFile.replaceAll("\\$\\{version\\}", projectVersion));
             } else {
                 getLog().info(String.format("WARNING: specified minified file %s does not contain a \"${version}\" version reference", fileSet.minFile));
