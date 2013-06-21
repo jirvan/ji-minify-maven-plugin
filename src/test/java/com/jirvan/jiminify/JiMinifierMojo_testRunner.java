@@ -35,17 +35,50 @@ import java.lang.reflect.*;
 public class JiMinifierMojo_testRunner {
 
     public static void main(String[] args) {
+        run("SimpleConcatenation",
+            new String[]{"views/paymentoptions/paymentOptions.minconf.json"},
+            "L:\\dev\\cm\\cm-server",
+            "cm-server",
+            "1.0.0-SNAPSHOT");
+    }
+
+    public static void run(String minifierToUse,
+                           String[] minifyConfigFiles,
+                           String projectDir,
+                           String projectName,
+                           String projectVersion) {
+        run(minifierToUse,
+            minifyConfigFiles,
+            projectDir + "/src/main/webapp",
+            projectDir + "/target/unpacked-dependency-jsandcss",
+            projectDir + "/target/" + projectName + "-" + projectVersion,
+            projectVersion);
+    }
+
+    public static void run(String[] minifyConfigFiles,
+                           String projectDir,
+                           String projectName,
+                           String projectVersion) {
+        run("SimpleConcatenation",
+            minifyConfigFiles,
+            projectDir + "/src/main/webapp",
+            projectDir + "/target/unpacked-dependency-jsandcss",
+            projectDir + "/target/" + projectName + "-" + projectVersion,
+            projectVersion);
+    }
+
+    protected static void run(String minifierToUse, String[] minifyConfigFiles, String webappSourceDir, String unpackedDependencyJsAndCssDir, String webappTargetDir, String projectVersion) {
         try {
+
             JiMinifierMojo jiMinifierMojo = new JiMinifierMojo();
-            Field field = jiMinifierMojo.getClass().getDeclaredField("minifierToUse");
-            String value = "SimpleConcatenation";
-            setPrivateFieldValue(jiMinifierMojo, field, value);
-            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("minifyConfigFiles"), new String[] {"views/paymentoptions/paymentOptions.minconf.json"});
-            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappSourceDir"), "L:\\dev\\cm\\cm-server\\src\\main\\webapp");
-            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("unpackedDependencyJsAndCssDir"), "L:\\dev\\cm\\cm-server\\target/unpacked-dependency-jsandcss");
-            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappTargetDir"), "L:\\dev\\cm\\cm-server\\target/cm-server-1.0.0-SNAPSHOT");
-            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("projectVersion"), "42.0-SNAPSHOT");
+            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("minifierToUse"), minifierToUse);
+            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("minifyConfigFiles"), minifyConfigFiles);
+            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappSourceDir"), webappSourceDir);
+            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("unpackedDependencyJsAndCssDir"), unpackedDependencyJsAndCssDir);
+            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappTargetDir"), webappTargetDir);
+            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("projectVersion"), projectVersion);
             jiMinifierMojo.execute();
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
