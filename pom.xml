@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.jirvan</groupId>
         <artifactId>ji-maven-project</artifactId>
-        <version>1.0.7</version>
+        <version>1.0.10</version>
     </parent>
 
     <groupId>com.jirvan</groupId>
@@ -17,7 +17,7 @@
         <dependency>
             <groupId>com.jirvan</groupId>
             <artifactId>ji</artifactId>
-            <version>1.0.22</version>
+            <version>1.0.25</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
