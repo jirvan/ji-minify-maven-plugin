@@ -8,7 +8,7 @@
 
     <groupId>com.jirvan</groupId>
     <artifactId>ji-minify-maven-plugin</artifactId>
-    <version>1.0.8-SNAPSHOT</version>
+    <version>1.0.8</version>
     <packaging>maven-plugin</packaging>
 
     <name>ji-minify-maven-plugin</name>
@@ -85,4 +85,8 @@
             <url>https://jirvan.com:8081/nexus/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
+
+  <scm>
+    <tag>v1.0.8</tag>
+  </scm>
 </project>
