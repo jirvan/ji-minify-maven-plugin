@@ -56,9 +56,6 @@ public class JiMinifierMojo extends AbstractMojo {
     @Parameter(property = "minify.webappSourceDir", defaultValue = "${basedir}/src/main/webapp")
     private String webappSourceDir;
 
-    @Parameter(property = "minify.unpackedDependencyJsAndCssDir", defaultValue = "${project.build.directory}/unpacked-dependency-jsandcss")
-    private String unpackedDependencyJsAndCssDir;
-
     @Parameter(property = "minify.webappTargetDir", defaultValue = "${project.build.directory}/${project.build.finalName}")
     private String webappTargetDir;
 
@@ -105,11 +102,6 @@ public class JiMinifierMojo extends AbstractMojo {
             ds.setCaseSensitive(true);
             ds.scan();
             String[] foundPaths = ds.getIncludedFiles();
-            if (foundPaths.length == 0) {
-                ds.setBasedir(new File(unpackedDependencyJsAndCssDir));
-                ds.scan();
-                foundPaths = ds.getIncludedFiles();
-            }
             Arrays.sort(foundPaths, new Comparator<String>() {
                 @Override public int compare(String o1, String o2) {
                     return o1.replaceFirst(".*[\\\\/]", "").compareTo(o2.replaceFirst(".*[\\\\/]", ""));
@@ -140,9 +132,6 @@ public class JiMinifierMojo extends AbstractMojo {
                     fileWriter.write(orderedPaths.get(i).replaceAll("\\\\", "/"));
                     fileWriter.write(isJsFile ? " ==========//\n" : " ==========*/\n");
                     File file = new File(webappSourceDir, orderedPaths.get(i));
-                    if (!file.exists()) {
-                        file = new File(unpackedDependencyJsAndCssDir, orderedPaths.get(i));
-                    }
                     if (!file.exists()) {
                         throw new RuntimeException(String.format("Neither %s or %s exist", new File(webappSourceDir, orderedPaths.get(i)).getAbsolutePath(), file.getAbsolutePath()));
                     }

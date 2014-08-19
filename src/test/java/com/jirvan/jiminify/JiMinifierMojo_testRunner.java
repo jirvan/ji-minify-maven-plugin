@@ -47,34 +47,31 @@ public class JiMinifierMojo_testRunner {
                            String projectDir,
                            String projectName,
                            String projectVersion) {
-        run(minifierToUse,
-            minifyConfigFiles,
-            projectDir + "/src/main/webapp",
-            projectDir + "/target/unpacked-dependency-jsandcss",
-            projectDir + "/target/" + projectName + "-" + projectVersion,
-            projectVersion);
+        baseRun(minifierToUse,
+                minifyConfigFiles,
+                projectDir + "/src/main/webapp",
+                projectDir + "/target/" + projectName + "-" + projectVersion,
+                projectVersion);
     }
 
     public static void run(String[] minifyConfigFiles,
                            String projectDir,
                            String projectName,
                            String projectVersion) {
-        run("SimpleConcatenation",
-            minifyConfigFiles,
-            projectDir + "/src/main/webapp",
-            projectDir + "/target/unpacked-dependency-jsandcss",
-            projectDir + "/target/" + projectName + "-" + projectVersion,
-            projectVersion);
+        baseRun("SimpleConcatenation",
+                minifyConfigFiles,
+                projectDir + "/src/main/webapp",
+                projectDir + "/target/" + projectName + "-" + projectVersion,
+                projectVersion);
     }
 
-    protected static void run(String minifierToUse, String[] minifyConfigFiles, String webappSourceDir, String unpackedDependencyJsAndCssDir, String webappTargetDir, String projectVersion) {
+    private static void baseRun(String minifierToUse, String[] minifyConfigFiles, String webappSourceDir, String webappTargetDir, String projectVersion) {
         try {
 
             JiMinifierMojo jiMinifierMojo = new JiMinifierMojo();
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("minifierToUse"), minifierToUse);
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("minifyConfigFiles"), minifyConfigFiles);
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappSourceDir"), webappSourceDir);
-            setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("unpackedDependencyJsAndCssDir"), unpackedDependencyJsAndCssDir);
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("webappTargetDir"), webappTargetDir);
             setPrivateFieldValue(jiMinifierMojo, jiMinifierMojo.getClass().getDeclaredField("projectVersion"), projectVersion);
             jiMinifierMojo.execute();
