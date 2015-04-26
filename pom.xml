@@ -1,23 +1,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>com.jirvan</groupId>
-        <artifactId>ji-maven-project</artifactId>
-        <version>1.0.11</version>
-    </parent>
-
     <groupId>com.jirvan</groupId>
     <artifactId>ji-minify-maven-plugin</artifactId>
     <version>1.0.10-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <scm>
+        <developerConnection>scm:git:dummy - should not push</developerConnection>
+    </scm>
 
     <name>ji-minify-maven-plugin</name>
 
     <dependencies>
         <dependency>
             <groupId>com.jirvan</groupId>
-            <artifactId>ji</artifactId>
-            <version>1.0.27</version>
+            <artifactId>ji-utils</artifactId>
+            <version>1.0.136</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
@@ -43,6 +43,15 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*.build.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -62,27 +71,57 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>2.5.1</version>
+                    <inherited>true</inherited>
+                    <configuration>
+                        <source>1.7</source>
+                        <target>1.7</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.3.1</version>
+                    <configuration>
+                        <tagNameFormat>v@{project.version}</tagNameFormat>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>1.0</version>
+                    <executions>
+                        <execution>
+                            <id>enforce</id>
+                            <configuration>
+                                <rules>
+                                    <DependencyConvergence/>
+                                    <requireReleaseVersion>
+                                        <message>No Snapshots Allowed!</message>
+                                    </requireReleaseVersion>
+                                    <requireReleaseDeps>
+                                        <message>No Snapshots Allowed!</message>
+                                    </requireReleaseDeps>
+                                </rules>
+                            </configuration>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <rules>
+                            <DependencyConvergence/>
+                            <requireReleaseDeps>
+                                <message>No Snapshots Allowed!</message>
+                            </requireReleaseDeps>
+                        </rules>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
-    <repositories>
-        <repository>
-            <id>com.jirvan.repo</id>
-            <url>https://jirvan.com:8081/nexus/content/repositories/releases</url>
-        </repository>
-        <repository>
-            <id>com.jirvan.snapshotRepo</id>
-            <url>https://jirvan.com:8081/nexus/content/repositories/snapshots</url>
-        </repository>
-    </repositories>
-    <distributionManagement>
-        <repository>
-            <id>com.jirvan.repo</id>
-            <url>https://jirvan.com:8081/nexus/content/repositories/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>com.jirvan.snapshotRepo</id>
-            <url>https://jirvan.com:8081/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
